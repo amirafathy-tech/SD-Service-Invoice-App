@@ -80,7 +80,7 @@
             <th style="min-width: 10rem;"> Quantity </th>
             <th style="min-width: 10rem;"> Remaining Quantity </th>
             <th style="min-width: 10rem;">Actual Quantity</th>
-            <th style="min-width: 10rem;">Actual Percentage</th>
+            <th style="min-width: 10rem;">Actual Percentage %</th>
 
             <th style="min-width: 10rem;"> MaterialGrp</th>
             <th style="min-width: 10rem;"> ServiceType</th>
@@ -240,7 +240,8 @@
                             [min]="0" [(ngModel)]="mainItem.actualPercentage">
                     </ng-template>
                     <ng-template pTemplate="output">
-                        {{ mainItem.actualPercentage |percent }}
+                        <!-- {{ mainItem.actualPercentage |percent }} -->
+                        {{ mainItem.actualPercentage? mainItem.actualPercentage+"%": ""  }}
                     </ng-template>
                 </p-cellEditor>
             </td>

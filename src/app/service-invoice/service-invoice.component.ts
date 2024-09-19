@@ -24,6 +24,8 @@ export class ServiceInvoiceComponent {
   lineNumber: string = "";
   executionOrderWithlineNumber?: MainItemExecutionOrder;
   // serviceInvoiceWithlineNumber?: MainItemServiceInvoice;
+  savedServiceInvoice?: MainItemServiceInvoice
+
   searchKey: string = ""
   currency: any
   totalValue: number = 0.0
@@ -111,16 +113,25 @@ export class ServiceInvoiceComponent {
     }
   }
 
-  // For Edit  MainItem
+  // For Edit  ServiceInvoice MainItem:
   clonedMainItem: { [s: number]: MainItemServiceInvoice } = {};
   onMainItemEditInit(record: MainItemServiceInvoice) {
     this.clonedMainItem[record.serviceInvoiceCode] = { ...record };
   }
-
-  serviceInvoiceRecord?: MainItemServiceInvoice;
-
   onMainItemEditSave(index: number, record: MainItemServiceInvoice) {
+    let executionOrderCode: number=0;
     console.log(record);
+
+    if (record.lineNumber) {
+      this._ApiService.get<MainItemExecutionOrder[]>('executionordermain/linenumber', record.lineNumber).subscribe(response => {
+        executionOrderCode = response[0].executionOrderMainCode
+        console.log(executionOrderCode);
+      });
+    }
+    // else {
+    //   this.executionOrderWithlineNumber = undefined
+    //   console.log(this.executionOrderWithlineNumber);
+    // }
     if ((record.quantity + record.actualQuantity) > record.totalQuantity) {
       this.messageService.add({
         severity: 'error',
@@ -144,6 +155,7 @@ export class ServiceInvoiceComponent {
       this._ApiService.patch<MainItemServiceInvoice>('serviceinvoice', record.serviceInvoiceCode, filteredRecord).subscribe({
         next: (res) => {
           console.log('serviceInvoice  updated:', res);
+          this.savedServiceInvoice=res;
           this.totalValue = 0;
           this.ngOnInit()
         }, error: (err) => {
@@ -151,8 +163,23 @@ export class ServiceInvoiceComponent {
           this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Invalid Data' });
         },
         complete: () => {
+          console.log(this.savedServiceInvoice);
           this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Record updated successfully ' });
           // this.ngOnInit()
+          if (executionOrderCode && this.savedServiceInvoice) {
+            this._ApiService.patch<MainItemExecutionOrder>('executionordermain', executionOrderCode, { actualQuantity: this.savedServiceInvoice.actualQuantity, actualPercentage: this.savedServiceInvoice.actualPercentage }).subscribe({
+              next: (res) => {
+                console.log('execution order updated:', res);
+                this.ngOnInit()
+              }, error: (err) => {
+                console.log(err);
+              },
+              complete: () => {
+                this.savedServiceInvoice=undefined;
+              }
+            });
+          }
+          //
         }
       });
     }
@@ -191,45 +218,15 @@ export class ServiceInvoiceComponent {
   }
 
   // For Add new  Main Item
-  newMainItem: MainItemServiceInvoice = {
-    serviceInvoiceCode: 0,
-    executionOrderMainCode: 0,
-    serviceNumberCode: 0,
-    description: "",
-    unitOfMeasurementCode: "",
-    currencyCode: "",
-    materialGroupCode: "",
-    serviceTypeCode: "",
-    personnelNumberCode: "",
-    lineTypeCode: "",
-
-    totalQuantity: 0,
-    amountPerUnit: 0,
-    total: 0,
-    actualQuantity: 0,
-    actualPercentage: 0,
-    overFulfillmentPercentage: 0,
-    unlimitedOverFulfillment: false,
-    manualPriceEntryAllowed: false,
-    externalServiceNumber: "",
-    serviceText: "",
-    lineText: "",
-    lineNumber: "",
-
-    biddersLine: false,
-    supplementaryLine: false,
-    lotCostOne: false,
-    doNotPrint: false,
-    quantity: 0
-  };
-
   cancelMainItemExecutionOrder(item: any): void {
     this.selectedExecutionOrders = this.selectedExecutionOrders.filter(i => i !== item);
   }
 
-
   addMainItem() {
+
     if (this.executionOrderWithlineNumber) {
+      console.log(this.executionOrderWithlineNumber);
+
       const newRecord = {
         serviceNumberCode: this.executionOrderWithlineNumber.serviceNumberCode,
         description: this.executionOrderWithlineNumber.description,
@@ -286,15 +283,32 @@ export class ServiceInvoiceComponent {
         this._ApiService.post<MainItemServiceInvoice>('serviceinvoice', filteredRecord).subscribe({
           next: (res) => {
             console.log('serviceInvoice created:', res);
+            this.savedServiceInvoice = res;
             this.ngOnInit()
           }, error: (err) => {
             console.log(err);
           },
           complete: () => {
-            // this.resetNewMainItem();
-            this.executionOrderWithlineNumber = undefined;
             this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Record added successfully ' });
             //this.ngOnInit()
+            console.log(this.savedServiceInvoice);
+            //
+            if (this.executionOrderWithlineNumber?.executionOrderMainCode && this.savedServiceInvoice) {
+              this._ApiService.patch<MainItemExecutionOrder>('executionordermain', this.executionOrderWithlineNumber.executionOrderMainCode, { actualQuantity: this.savedServiceInvoice.actualQuantity, actualPercentage: this.savedServiceInvoice.actualPercentage }).subscribe({
+                next: (res) => {
+                  console.log('execution order updated:', res);
+                  this.ngOnInit()
+                }, error: (err) => {
+                  console.log(err);
+                },
+                complete: () => {
+                  this.savedServiceInvoice=undefined
+                  this.executionOrderWithlineNumber = undefined;
+                }
+              });
+              this.executionOrderWithlineNumber = undefined;
+            }
+            //
           }
         });
       }
@@ -359,56 +373,35 @@ export class ServiceInvoiceComponent {
       this._ApiService.post<MainItemServiceInvoice>('serviceinvoice', filteredRecord).subscribe({
         next: (res) => {
           console.log('serviceInvoice created:', res);
+          this.savedServiceInvoice=res;
           this.ngOnInit()
         }, error: (err) => {
           console.log(err);
         },
         complete: () => {
-          //this.resetNewMainItem();
-          //this.selectedServiceNumberRecord = undefined;
-          this.selectedExecutionOrders = [];
+          console.log(this.savedServiceInvoice);
           this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Record added successfully ' });
           //this.ngOnInit()
+          if (mainItem.executionOrderMainCode && this.savedServiceInvoice) {
+            this._ApiService.patch<MainItemExecutionOrder>('executionordermain', mainItem.executionOrderMainCode, { actualQuantity: this.savedServiceInvoice.actualQuantity, actualPercentage: this.savedServiceInvoice.actualPercentage }).subscribe({
+              next: (res) => {
+                console.log('execution order updated:', res);
+                this.ngOnInit()
+              }, error: (err) => {
+                console.log(err);
+              },
+              complete: () => {
+                this.savedServiceInvoice=undefined;
+              }
+            });
+            //
+            this.selectedExecutionOrders = [];
+          }
+          //
         }
       });
     }
-
   }
-
-  resetNewMainItem() {
-    this.newMainItem = {
-      serviceInvoiceCode: 0,
-      executionOrderMainCode: 0,
-      serviceNumberCode: 0,
-      description: "",
-      unitOfMeasurementCode: "",
-      currencyCode: "",
-      materialGroupCode: "",
-      serviceTypeCode: "",
-      personnelNumberCode: "",
-      lineTypeCode: "",
-
-      totalQuantity: 0,
-      amountPerUnit: 0,
-      total: 0,
-      actualQuantity: 0,
-      actualPercentage: 0,
-      overFulfillmentPercentage: 0,
-      unlimitedOverFulfillment: false,
-      manualPriceEntryAllowed: false,
-      externalServiceNumber: "",
-      serviceText: "",
-      lineText: "",
-      lineNumber: "",
-
-      biddersLine: false,
-      supplementaryLine: false,
-      lotCostOne: false,
-      doNotPrint: false,
-      quantity:0,
-    }
-  }
-
   //Export  to Excel Sheet
   exportExcel() {
     import('xlsx').then((xlsx) => {
@@ -457,4 +450,70 @@ export class ServiceInvoiceComponent {
     });
     return newObj;
   }
+
+  newMainItem: MainItemServiceInvoice = {
+    serviceInvoiceCode: 0,
+    executionOrderMainCode: 0,
+    serviceNumberCode: 0,
+    description: "",
+    unitOfMeasurementCode: "",
+    currencyCode: "",
+    materialGroupCode: "",
+    serviceTypeCode: "",
+    personnelNumberCode: "",
+    lineTypeCode: "",
+
+    totalQuantity: 0,
+    amountPerUnit: 0,
+    total: 0,
+    actualQuantity: 0,
+    actualPercentage: 0,
+    overFulfillmentPercentage: 0,
+    unlimitedOverFulfillment: false,
+    manualPriceEntryAllowed: false,
+    externalServiceNumber: "",
+    serviceText: "",
+    lineText: "",
+    lineNumber: "",
+
+    biddersLine: false,
+    supplementaryLine: false,
+    lotCostOne: false,
+    doNotPrint: false,
+    quantity: 0
+  };
+  resetNewMainItem() {
+    this.newMainItem = {
+      serviceInvoiceCode: 0,
+      executionOrderMainCode: 0,
+      serviceNumberCode: 0,
+      description: "",
+      unitOfMeasurementCode: "",
+      currencyCode: "",
+      materialGroupCode: "",
+      serviceTypeCode: "",
+      personnelNumberCode: "",
+      lineTypeCode: "",
+
+      totalQuantity: 0,
+      amountPerUnit: 0,
+      total: 0,
+      actualQuantity: 0,
+      actualPercentage: 0,
+      overFulfillmentPercentage: 0,
+      unlimitedOverFulfillment: false,
+      manualPriceEntryAllowed: false,
+      externalServiceNumber: "",
+      serviceText: "",
+      lineText: "",
+      lineNumber: "",
+
+      biddersLine: false,
+      supplementaryLine: false,
+      lotCostOne: false,
+      doNotPrint: false,
+      quantity: 0,
+    }
+  }
+
 }

@@ -37,8 +37,7 @@ import { HeaderComponent } from './header/header.component';
 import { AuthModule } from './auth/auth.module';
 import { AuthInterceptorService } from './auth/auth-interceptor.service';
 import { LoadingSpinnerComponent } from './shared/loading-spinner/loading-spinner.component';
-import { AlertComponent } from './shared/alert/alert.component';
-import { ExecutionOrderComponent } from './execution-order/execution-order.component';
+//import { AlertComponent } from './shared/alert/alert.component';
 import { SearchPipe } from './pipes/search.pipe';
 import { ServiceInvoiceComponent } from './service-invoice/service-invoice.component';
 
@@ -47,7 +46,6 @@ import { ServiceInvoiceComponent } from './service-invoice/service-invoice.compo
     AppComponent,
     HeaderComponent,
     LoadingSpinnerComponent,
-    ExecutionOrderComponent,
     SearchPipe,
     ServiceInvoiceComponent,
 

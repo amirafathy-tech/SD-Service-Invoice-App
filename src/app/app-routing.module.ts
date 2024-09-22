@@ -4,7 +4,6 @@ import { RouterModule, Routes } from '@angular/router';
 import { AppComponent } from './app.component';
 import { AuthComponent } from './auth/auth.component';
 import { AuthGuard } from './auth/auth.guard';
-import { ExecutionOrderComponent } from './execution-order/execution-order.component';
 import { ServiceInvoiceComponent } from './service-invoice/service-invoice.component';
 
 
